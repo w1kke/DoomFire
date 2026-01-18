@@ -18,7 +18,7 @@ This repo is a **spec/test-driven package** for a first prototype:
 - UX: sliders + presets are staged; user presses **Ignite** to apply; narration steps reflect progress/latency.
 - Payments: **skipped** for now (x402/USDC later).
 
-## What you get in this zip
+## What you get in this repository
 
 - `AGENTS.md` — guardrails for AI coding agents (keeps scope locked).
 - `SKILLS.md` — required tool capabilities / tool-call primitives (RALPH-friendly).
