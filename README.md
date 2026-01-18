@@ -20,6 +20,9 @@ This repo is a **spec/test-driven package** for a first prototype:
 
 ## What you get in this zip
 
+- `AGENTS.md` — guardrails for AI coding agents (keeps scope locked).
+- `SKILLS.md` — required tool capabilities / tool-call primitives (RALPH-friendly).
+- `PROMPTS.md` — copy/paste prompts to start and run an acceptance-driven dev loop.
 - `docs/` — architecture, protocol artifacts, deployment notes.
 - `artifacts/` — example ERC-8004 agent card, UI Manifest v2, preview bundle, catalog stub.
 - `test/` — acceptance criteria + test plan + traceability matrix + JSON test vectors.
