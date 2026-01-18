@@ -1,0 +1,147 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#ui-manifest-v2",
+  "manifestVersion": "2",
+  "agentRegistry": "eip155:84532:0x7177a6867296406881E20d6647232314736Dd09A",
+  "agentId": "<AGENT_ID_STRING>",
+  "updatedAt": "2026-01-18T00:00:00Z",
+  "a2ui": {
+    "version": "0.8",
+    "a2aExtensionUri": "https://a2ui.org/a2a-extension/a2ui/v0.8",
+    "dataPartMimeType": "application/json+a2ui",
+    "supportedCatalogIds": [
+      "https://github.com/google/A2UI/blob/main/specification/0.8/json/standard_catalog_definition.json",
+      "ipfs://<DIR_CID>/catalogs/cozy-doomfire-catalog.json"
+    ],
+    "acceptsInlineCatalogs": false
+  },
+  "widgets": [
+    {
+      "id": "com.cozy.doomfire.live",
+      "title": "Cozy DoomFire",
+      "description": "A cozy pixel fireplace using the DOOM fire algorithm. Tune settings, then Ignite.",
+      "kind": "live",
+      "requiredCatalogIds": [
+        "https://github.com/google/A2UI/blob/main/specification/0.8/json/standard_catalog_definition.json",
+        "ipfs://<DIR_CID>/catalogs/cozy-doomfire-catalog.json"
+      ],
+      "surfaceContract": {
+        "mode": "single",
+        "surfaceIds": ["main"]
+      },
+      "inputs": {
+        "type": "object",
+        "required": ["mode"],
+        "properties": {
+          "mode": {"enum": ["interactive"]},
+          "seed": {"type": "integer", "minimum": 0, "maximum": 2147483647}
+        },
+        "additionalProperties": false
+      },
+      "events": [
+        {
+          "type": "fire.applySettings",
+          "payloadSchema": {
+            "type": "object",
+            "required": ["presetId", "size", "intensity", "heat"],
+            "properties": {
+              "presetId": {"type": "string", "maxLength": 64},
+              "size": {"type": "number", "minimum": 0, "maximum": 1},
+              "intensity": {"type": "number", "minimum": 0, "maximum": 1},
+              "heat": {"type": "number", "minimum": 0, "maximum": 1}
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "type": "fire.setAudioEnabled",
+          "payloadSchema": {
+            "type": "object",
+            "required": ["enabled"],
+            "properties": {"enabled": {"type": "boolean"}},
+            "additionalProperties": false
+          }
+        }
+      ],
+      "preview": {
+        "policy": {
+          "allowedSurfaces": ["preview"],
+          "allowNetwork": false,
+          "allowExternalLinks": false,
+          "allowWalletIntents": false
+        },
+        "thumbnail": {
+          "uri": "ipfs://<DIR_CID>/thumbs/cozy-doomfire.webp",
+          "mimeType": "image/webp"
+        },
+        "payload": {
+          "mode": "inlineMessageBundle",
+          "bundle": {
+            "a2uiVersion": "0.8",
+            "encoding": "json-array",
+            "messages": [
+              {
+                "surfaceUpdate": {
+                  "surfaceId": "preview",
+                  "components": [
+                    {
+                      "id": "root",
+                      "component": {"Card": {"child": "col"}}
+                    },
+                    {
+                      "id": "col",
+                      "component": {"Column": {"children": {"explicitList": ["title", "tag", "hint"]}}}
+                    },
+                    {
+                      "id": "title",
+                      "component": {
+                        "Text": {"text": {"literalString": "Cozy DoomFire"}, "usageHint": "h2"}
+                      }
+                    },
+                    {
+                      "id": "tag",
+                      "component": {
+                        "Text": {
+                          "text": {"literalString": "Pixel fireplace • deterministic presets"},
+                          "usageHint": "body"
+                        }
+                      }
+                    },
+                    {
+                      "id": "hint",
+                      "component": {
+                        "Text": {
+                          "text": {"literalString": "Open to interact, then press Ignite."},
+                          "usageHint": "body"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {"beginRendering": {"surfaceId": "preview", "root": "root"}}
+            ]
+          }
+        }
+      },
+      "capabilities": {
+        "network": "https",
+        "externalLinks": "none",
+        "wallet": "none"
+      },
+      "invocation": {
+        "kind": "a2a",
+        "request": {
+          "type": "renderWidget",
+          "widgetId": "com.cozy.doomfire.live",
+          "params": {"mode": "interactive", "seed": 1337}
+        }
+      },
+      "permissions": {
+        "allowFork": true,
+        "allowDerivatives": true,
+        "requireAttribution": true,
+        "license": "MIT"
+      }
+    }
+  ]
+}

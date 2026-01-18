@@ -1,0 +1,68 @@
+{
+  "a2uiVersion": "0.8",
+  "encoding": "json-array",
+  "messages": [
+    {
+      "surfaceUpdate": {
+        "surfaceId": "preview",
+        "components": [
+          {
+            "id": "root",
+            "component": {
+              "Card": {
+                "child": "col"
+              }
+            }
+          },
+          {
+            "id": "col",
+            "component": {
+              "Column": {
+                "children": {
+                  "explicitList": [
+                    "title",
+                    "tag",
+                    "hint"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": "title",
+            "component": {
+              "Text": {
+                "text": {"literalString": "Cozy DoomFire"},
+                "usageHint": "h2"
+              }
+            }
+          },
+          {
+            "id": "tag",
+            "component": {
+              "Text": {
+                "text": {"literalString": "Pixel fireplace • deterministic presets"},
+                "usageHint": "body"
+              }
+            }
+          },
+          {
+            "id": "hint",
+            "component": {
+              "Text": {
+                "text": {"literalString": "Open to interact, then press Ignite."},
+                "usageHint": "body"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "beginRendering": {
+        "surfaceId": "preview",
+        "root": "root"
+      }
+    }
+  ]
+}

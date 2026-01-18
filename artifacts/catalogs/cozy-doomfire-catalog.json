@@ -1,0 +1,34 @@
+{
+  "catalogId": "com.cozy.catalogs.doomfire",
+  "catalogVersion": "0.1.0",
+  "title": "Cozy DoomFire Catalog (Stub)",
+  "description": "A minimal custom catalog describing the DoomFireCanvas component. Hosts must implement this component locally; manifests MUST NOT cause remote code installation.",
+  "components": [
+    {
+      "type": "DoomFireCanvas",
+      "description": "Canvas/WebGL Doom fire renderer with optional audio.",
+      "propsSchema": {
+        "type": "object",
+        "required": ["appliedSettings", "phase"],
+        "properties": {
+          "appliedSettings": {
+            "type": "object",
+            "required": ["presetId", "size", "intensity", "heat", "seed"],
+            "properties": {
+              "presetId": {"type": "string", "maxLength": 64},
+              "size": {"type": "number", "minimum": 0, "maximum": 1},
+              "intensity": {"type": "number", "minimum": 0, "maximum": 1},
+              "heat": {"type": "number", "minimum": 0, "maximum": 1},
+              "seed": {"type": "integer", "minimum": 0}
+            },
+            "additionalProperties": false
+          },
+          "audioEnabled": {"type": "boolean"},
+          "phase": {"type": "string", "maxLength": 32},
+          "phaseProgress": {"type": "number", "minimum": 0, "maximum": 1}
+        },
+        "additionalProperties": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "Cozy DoomFire",
+  "description": "A deterministic, cozy pixel fireplace (DOOM fire) rendered locally via A2UI.",
+  "endpoints": [
+    {
+      "name": "A2A",
+      "endpoint": "https://<YOUR_AGENT_HOST>/a2a",
+      "version": "1.0"
+    },
+    {
+      "name": "A2UI_MANIFEST",
+      "endpoint": "ipfs://<DIR_CID>/ui-manifest.v2.json",
+      "version": "2"
+    }
+  ],
+  "supportedTrust": []
+}
