@@ -1,3 +1,5 @@
+import { createCanvasRenderer } from "./doomfire.js";
+
 const previewRoot = document.getElementById("preview-root");
 const previewFallback = document.getElementById("preview-fallback");
 const liveRoot = document.getElementById("live-root");
@@ -134,7 +136,7 @@ function renderComponent(componentId, components, handlers) {
     case "Button":
       return renderButton(props, handlers);
     case "DoomFireCanvas":
-      return renderDoomFireCanvas();
+      return renderDoomFireCanvas(props);
     case "Image":
       return renderImagePlaceholder(props);
     default: {
@@ -196,10 +198,11 @@ function renderButton(props, handlers) {
   return button;
 }
 
-function renderDoomFireCanvas() {
-  const canvas = document.createElement("div");
+function renderDoomFireCanvas(props) {
+  const canvas = document.createElement("canvas");
   canvas.className = "doomfire-canvas";
-  canvas.textContent = "";
+  const settings = props?.appliedSettings || {};
+  createCanvasRenderer(canvas, settings);
   return canvas;
 }
 

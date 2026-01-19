@@ -111,7 +111,11 @@ body {
 
 .doomfire-canvas {
   width: 100%;
+  max-width: 100%;
+  aspect-ratio: 2 / 1;
   min-height: 140px;
   border-radius: 12px;
-  background: linear-gradient(180deg, #2f2014 0%, #a8562a 70%, #f2a046 100%);
+  display: block;
+  image-rendering: pixelated;
+  background: #0d0a08;
 }
