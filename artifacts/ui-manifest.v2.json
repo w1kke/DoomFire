@@ -89,7 +89,7 @@
                     },
                     {
                       "id": "col",
-                      "component": {"Column": {"children": {"explicitList": ["title", "tag", "hint"]}}}
+                      "component": {"Column": {"children": {"explicitList": ["title", "tag", "hint", "open"]}}}
                     },
                     {
                       "id": "title",
@@ -112,6 +112,15 @@
                         "Text": {
                           "text": {"literalString": "Open to interact, then press Ignite."},
                           "usageHint": "body"
+                        }
+                      }
+                    },
+                    {
+                      "id": "open",
+                      "component": {
+                        "Button": {
+                          "label": {"literalString": "Open"},
+                          "action": {"hostEvent": {"type": "openLive"}}
                         }
                       }
                     }

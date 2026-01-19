@@ -19,11 +19,12 @@
             "component": {
               "Column": {
                 "children": {
-                  "explicitList": [
-                    "title",
-                    "tag",
-                    "hint"
-                  ]
+                "explicitList": [
+                  "title",
+                  "tag",
+                  "hint",
+                  "open"
+                ]
                 }
               }
             }
@@ -52,6 +53,15 @@
               "Text": {
                 "text": {"literalString": "Open to interact, then press Ignite."},
                 "usageHint": "body"
+              }
+            }
+          },
+          {
+            "id": "open",
+            "component": {
+              "Button": {
+                "label": {"literalString": "Open"},
+                "action": {"hostEvent": {"type": "openLive"}}
               }
             }
           }

@@ -4,9 +4,15 @@
   "version": "0.0.0",
   "description": "Spec/test-driven prototype for the Cozy DoomFire host and agent.",
   "scripts": {
-    "test": "node --test"
+    "test:unit": "node --test test/agent/*.test.js test/audio/*.test.js test/deployment/*.test.js test/doomfire/*.test.js test/host/*.test.js test/validation/*.test.js",
+    "test:e2e": "playwright test",
+    "test": "node --test test/agent/*.test.js test/audio/*.test.js test/deployment/*.test.js test/doomfire/*.test.js test/host/*.test.js test/validation/*.test.js && playwright test",
+    "dev": "node src/server.js"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.1"
   }
 }

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cozy DoomFire Host</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="panel">
+        <header class="panel__header">
+          <h1 class="panel__title">Preview</h1>
+        </header>
+        <div id="preview-root" class="panel__body"></div>
+        <div id="preview-fallback" class="panel__fallback" hidden>
+          Preview unavailable.
+        </div>
+      </section>
+
+      <section class="panel">
+        <header class="panel__header panel__header--live">
+          <h2 class="panel__title">Live Session</h2>
+          <span id="live-badge" class="live-badge" hidden>LIVE</span>
+        </header>
+        <div id="live-root" class="panel__body"></div>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

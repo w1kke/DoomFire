@@ -1,0 +1,59 @@
+{
+  "a2uiVersion": "0.8",
+  "encoding": "json-array",
+  "messages": [
+    {
+      "surfaceUpdate": {
+        "surfaceId": "main",
+        "components": [
+          {
+            "id": "root",
+            "component": {"Card": {"child": "col"}}
+          },
+          {
+            "id": "col",
+            "component": {
+              "Column": {
+                "children": {"explicitList": ["title", "canvas", "ignite"]}
+              }
+            }
+          },
+          {
+            "id": "title",
+            "component": {
+              "Text": {
+                "text": {"literalString": "Live: Cozy DoomFire"},
+                "usageHint": "h2"
+              }
+            }
+          },
+          {
+            "id": "canvas",
+            "component": {
+              "DoomFireCanvas": {
+                "appliedSettings": {
+                  "presetId": "cozy_amber",
+                  "size": 0.7,
+                  "intensity": 0.6,
+                  "heat": 0.6,
+                  "seed": 1337
+                },
+                "phase": "idle"
+              }
+            }
+          },
+          {
+            "id": "ignite",
+            "component": {
+              "Button": {
+                "label": {"literalString": "Ignite"},
+                "action": {"hostEvent": {"type": "ignite"}}
+              }
+            }
+          }
+        ]
+      }
+    },
+    {"beginRendering": {"surfaceId": "main", "root": "root"}}
+  ]
+}
