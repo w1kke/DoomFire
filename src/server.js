@@ -7,17 +7,24 @@ const { loadManifestFromFile } = require("./host/manifest_loader.js");
 const { renderPreviewFromManifest } = require("./host/preview_renderer.js");
 const { createLiveSession } = require("./host/live_session.js");
 const { respondToIgnite } = require("./agent/ignite_responder.js");
+const { resolvePointerChain } = require("./host/erc8004_resolver.js");
+const { createRpcChainReader } = require("./host/erc8004_chain_reader.js");
 
 const ROOT_DIR = path.resolve(__dirname, "..");
 const WEB_DIR = path.join(ROOT_DIR, "web");
 const ARTIFACTS_DIR = path.join(ROOT_DIR, "artifacts");
 const TEST_VECTORS_DIR = path.join(ROOT_DIR, "test", "test_vectors");
+const DEFAULT_REGISTRY = "eip155:84532:0x7177a6867296406881E20d6647232314736Dd09A";
+const DEFAULT_RPC_URL = "https://sepolia.base.org";
+const DEFAULT_IPFS_GATEWAY = "https://ipfs.io";
 
 const MIME_TYPES = {
   ".html": "text/html",
   ".css": "text/css",
   ".js": "text/javascript",
   ".json": "application/json",
+  ".wav": "audio/wav",
+  ".mp3": "audio/mpeg",
 };
 
 let liveSession = null;
@@ -47,21 +54,13 @@ function loadLiveBundle() {
   return JSON.parse(raw);
 }
 
-function handlePreview(request, response, url) {
-  const manifestPath = resolveManifestPath(url.searchParams.get("manifest"));
-  if (!manifestPath) {
-    return sendJson(response, 400, {
-      ok: false,
-      error: { code: "manifest_not_found" },
-    });
-  }
-
-  const manifestResult = loadManifestFromFile(manifestPath);
+async function handlePreview(request, response, url) {
+  const manifestResult = await resolveManifestFromRequest(url);
   if (!manifestResult.ok) {
     return sendJson(response, 400, { ok: false, error: manifestResult.error });
   }
 
-  const preview = renderPreviewFromManifest(manifestResult.value);
+  const preview = renderPreviewFromManifest(manifestResult.manifest);
   if (!preview.ok) {
     return sendJson(response, 200, {
       ok: false,
@@ -74,41 +73,40 @@ function handlePreview(request, response, url) {
 }
 
 function handleLiveStart(request, response, url) {
-  collectJson(request, (body) => {
-    const manifestPath = resolveManifestPath(url.searchParams.get("manifest"));
-    if (!manifestPath) {
-      return sendJson(response, 400, {
+  collectJson(request, async (body) => {
+    try {
+      const manifestResult = await resolveManifestFromRequest(url);
+      if (!manifestResult.ok) {
+        return sendJson(response, 400, { ok: false, error: manifestResult.error });
+      }
+
+      const widget = manifestResult.manifest.widgets[0];
+      liveSession = createLiveSession({ widget });
+      liveSurfaceId = widget?.surfaceContract?.surfaceIds?.[0] || "main";
+
+      const start = liveSession.start({ userInitiated: body?.userInitiated === true });
+      if (!start.ok) {
+        return sendJson(response, 403, { ok: false, error: start.error });
+      }
+
+      const bundle = loadLiveBundle();
+      if (Array.isArray(bundle.messages)) {
+        bundle.messages.forEach((message) => liveSession.applyMessage(message));
+      }
+
+      const surface = liveSession.getSurface(liveSurfaceId);
+      return sendJson(response, 200, {
+        ok: true,
+        live: liveSession.isLive(),
+        liveBadge: liveSession.isLiveBadgeVisible(),
+        surface,
+      });
+    } catch (error) {
+      return sendJson(response, 500, {
         ok: false,
-        error: { code: "manifest_not_found" },
+        error: { code: "live_start_failed" },
       });
     }
-
-    const manifestResult = loadManifestFromFile(manifestPath);
-    if (!manifestResult.ok) {
-      return sendJson(response, 400, { ok: false, error: manifestResult.error });
-    }
-
-    const widget = manifestResult.value.widgets[0];
-    liveSession = createLiveSession({ widget });
-    liveSurfaceId = widget?.surfaceContract?.surfaceIds?.[0] || "main";
-
-    const start = liveSession.start({ userInitiated: body?.userInitiated === true });
-    if (!start.ok) {
-      return sendJson(response, 403, { ok: false, error: start.error });
-    }
-
-    const bundle = loadLiveBundle();
-    if (Array.isArray(bundle.messages)) {
-      bundle.messages.forEach((message) => liveSession.applyMessage(message));
-    }
-
-    const surface = liveSession.getSurface(liveSurfaceId);
-    return sendJson(response, 200, {
-      ok: true,
-      live: liveSession.isLive(),
-      liveBadge: liveSession.isLiveBadgeVisible(),
-      surface,
-    });
   });
 }
 
@@ -167,6 +165,111 @@ function handleStatic(request, response, url) {
   });
 }
 
+function handleArtifacts(request, response, url) {
+  const safePath = path.normalize(url.pathname).replace(/^\/+/, "");
+  const resolvedPath = path.resolve(ROOT_DIR, safePath);
+  const allowedRoot = path.join(ARTIFACTS_DIR, "audio");
+
+  if (!resolvedPath.startsWith(allowedRoot)) {
+    response.writeHead(403);
+    response.end("Forbidden");
+    return;
+  }
+
+  fs.readFile(resolvedPath, (err, data) => {
+    if (err) {
+      response.writeHead(404);
+      response.end("Not Found");
+      return;
+    }
+
+    const ext = path.extname(resolvedPath);
+    response.writeHead(200, {
+      "Content-Type": MIME_TYPES[ext] || "application/octet-stream",
+    });
+    response.end(data);
+  });
+}
+
+async function resolveManifestFromRequest(url) {
+  const agentId = url.searchParams.get("agentId");
+  if (agentId) {
+    return resolveManifestFromChain({
+      agentId,
+      agentRegistry: url.searchParams.get("agentRegistry") || DEFAULT_REGISTRY,
+    });
+  }
+
+  const manifestPath = resolveManifestPath(url.searchParams.get("manifest"));
+  if (!manifestPath) {
+    return {
+      ok: false,
+      error: { code: "manifest_not_found" },
+    };
+  }
+
+  const manifestResult = loadManifestFromFile(manifestPath);
+  if (!manifestResult.ok) {
+    return { ok: false, error: manifestResult.error };
+  }
+
+  return { ok: true, manifest: manifestResult.value };
+}
+
+async function resolveManifestFromChain({ agentId, agentRegistry }) {
+  try {
+    const registry = normalizeRegistryAddress(agentRegistry);
+    if (!registry) {
+      return {
+        ok: false,
+        error: { code: "agent_registry_missing" },
+      };
+    }
+
+    const rpcUrl = process.env.ERC8004_RPC_URL || DEFAULT_RPC_URL;
+    const ipfsGateway = process.env.IPFS_GATEWAY || DEFAULT_IPFS_GATEWAY;
+    const chainReader = createRpcChainReader({ rpcUrl });
+    const fetchJson = createJsonFetcher();
+
+    const result = await resolvePointerChain({
+      agentRegistry: registry,
+      agentId,
+      chainReader,
+      fetchJson,
+      ipfsGateway,
+    });
+
+    if (!result.ok) {
+      return { ok: false, error: result.error };
+    }
+
+    return { ok: true, manifest: result.manifest, agentCard: result.agentCard };
+  } catch (error) {
+    return {
+      ok: false,
+      error: { code: "pointer_chain_failed" },
+    };
+  }
+}
+
+function normalizeRegistryAddress(registry) {
+  if (!registry || typeof registry !== "string") {
+    return null;
+  }
+  const parts = registry.split(":");
+  return parts[parts.length - 1];
+}
+
+function createJsonFetcher() {
+  return async (uri) => {
+    const response = await fetch(uri);
+    if (!response.ok) {
+      throw new Error(`Fetch failed: ${response.status}`);
+    }
+    return response.json();
+  };
+}
+
 function collectJson(request, callback) {
   let body = "";
   request.on("data", (chunk) => {
@@ -194,13 +297,19 @@ const server = http.createServer((request, response) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
 
   if (url.pathname === "/api/preview" && request.method === "GET") {
-    return handlePreview(request, response, url);
+    handlePreview(request, response, url).catch(() => {
+      sendJson(response, 500, { ok: false, error: { code: "preview_failed" } });
+    });
+    return;
   }
   if (url.pathname === "/api/live/start" && request.method === "POST") {
     return handleLiveStart(request, response, url);
   }
   if (url.pathname === "/api/live/event" && request.method === "POST") {
     return handleLiveEvent(request, response);
+  }
+  if (url.pathname.startsWith("/artifacts/")) {
+    return handleArtifacts(request, response, url);
   }
 
   return handleStatic(request, response, url);

@@ -14,7 +14,7 @@
             "id": "col",
             "component": {
               "Column": {
-                "children": {"explicitList": ["title", "canvas", "ignite"]}
+                "children": {"explicitList": ["title", "canvas", "controls", "ignite"]}
               }
             }
           },
@@ -39,6 +39,181 @@
                   "seed": 1337
                 },
                 "phase": "idle"
+              }
+            }
+          },
+          {
+            "id": "controls",
+            "component": {
+              "Column": {
+                "children": {
+                  "explicitList": [
+                    "preset_label",
+                    "preset_row",
+                    "size_slider",
+                    "intensity_slider",
+                    "heat_slider",
+                    "audio_toggle"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": "preset_label",
+            "component": {
+              "Text": {
+                "text": {"literalString": "Presets"},
+                "usageHint": "body"
+              }
+            }
+          },
+          {
+            "id": "preset_row",
+            "component": {
+              "Row": {
+                "children": {
+                  "explicitList": [
+                    "preset_amber",
+                    "preset_blue",
+                    "preset_violet",
+                    "preset_lime",
+                    "preset_rose",
+                    "preset_ghost"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": "preset_amber",
+            "component": {
+              "Button": {
+                "label": {"literalString": "Cozy Amber"},
+                "action": {
+                  "hostEvent": {
+                    "type": "setPreset",
+                    "payload": {"presetId": "cozy_amber"}
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "preset_blue",
+            "component": {
+              "Button": {
+                "label": {"literalString": "Copper Blue"},
+                "action": {
+                  "hostEvent": {
+                    "type": "setPreset",
+                    "payload": {"presetId": "copper_blue"}
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "preset_violet",
+            "component": {
+              "Button": {
+                "label": {"literalString": "Mystic Violet"},
+                "action": {
+                  "hostEvent": {
+                    "type": "setPreset",
+                    "payload": {"presetId": "mystic_violet"}
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "preset_lime",
+            "component": {
+              "Button": {
+                "label": {"literalString": "Neon Lime"},
+                "action": {
+                  "hostEvent": {
+                    "type": "setPreset",
+                    "payload": {"presetId": "neon_lime"}
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "preset_rose",
+            "component": {
+              "Button": {
+                "label": {"literalString": "Rose Quartz"},
+                "action": {
+                  "hostEvent": {
+                    "type": "setPreset",
+                    "payload": {"presetId": "rose_quartz"}
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "preset_ghost",
+            "component": {
+              "Button": {
+                "label": {"literalString": "Ghost Flame"},
+                "action": {
+                  "hostEvent": {
+                    "type": "setPreset",
+                    "payload": {"presetId": "ghost_flame"}
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": "size_slider",
+            "component": {
+              "Slider": {
+                "label": {"literalString": "Size"},
+                "value": 0.7,
+                "min": 0,
+                "max": 1,
+                "step": 0.01,
+                "action": {"hostEvent": {"type": "setSize"}}
+              }
+            }
+          },
+          {
+            "id": "intensity_slider",
+            "component": {
+              "Slider": {
+                "label": {"literalString": "Intensity"},
+                "value": 0.6,
+                "min": 0,
+                "max": 1,
+                "step": 0.01,
+                "action": {"hostEvent": {"type": "setIntensity"}}
+              }
+            }
+          },
+          {
+            "id": "heat_slider",
+            "component": {
+              "Slider": {
+                "label": {"literalString": "Heat"},
+                "value": 0.6,
+                "min": 0,
+                "max": 1,
+                "step": 0.01,
+                "action": {"hostEvent": {"type": "setHeat"}}
+              }
+            }
+          },
+          {
+            "id": "audio_toggle",
+            "component": {
+              "Button": {
+                "label": {"literalString": "Audio"},
+                "action": {"hostEvent": {"type": "toggleAudio"}}
               }
             }
           },

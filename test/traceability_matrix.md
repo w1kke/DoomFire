@@ -13,10 +13,12 @@ Notes:
 - DF-VAL-003 implemented as a unit test for preview surface allowlist.
 - DF-SBX-001/002 implemented as preview sandbox unit tests (external link, wallet, network).
 - AC-001 preview render from manifest covered by manifest loader tests.
-- AC-003 pointer chain covered by ERC-8004 resolver tests with mocked chain/fetch.
+- AC-003 pointer chain covered by ERC-8004 resolver + RPC chain reader tests with mocked fetch.
 - DF-LIVE-001/002/003 covered by live session unit tests (gating, surfaces, events).
 - AC-006/007 covered by ignite flow + agent narration tests.
 - DF-FX-001 covered by doomfire deterministic hash test.
 - DF-AUD-001/002 covered by audio controller gesture + loop envelope tests.
 - AC-010 documented via deployment_check.json and elizacloud check test.
 - Playwright E2E tests cover preview render, sandbox fallback, and live gating.
+- Playwright E2E covers control staging + Ignite payload for live settings.
+- Playwright E2E covers audio gesture gating via Audio toggle.

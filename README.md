@@ -35,6 +35,28 @@ This repo is a **spec/test-driven package** for a first prototype:
 2. Implement in small PRs using the order in `skills/00_build_order.md`.
 3. Use the JSON in `artifacts/` as the starting point.
 
+## Run the demo + tests
+
+```bash
+npm install
+npx playwright install chromium
+```
+
+```bash
+npm test
+```
+
+```bash
+npm run dev
+```
+
+Open:
+- `http://127.0.0.1:4173/?manifest=test/test_vectors/manifest.preview.good.json`
+- `http://127.0.0.1:4173/?agentId=<AGENT_ID>`
+
+Audio:
+- Put the crackle MP3 in `artifacts/audio/` and update `web/app.js` if you rename it.
+
 ## References
 
 - UI Manifest v2 draft (internal): see `docs/03_ui_manifest_v2.md`.

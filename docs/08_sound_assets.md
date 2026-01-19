@@ -12,7 +12,7 @@ Pixabay offers royalty-free sound effects with a simple content license.
 
 For MVP:
 - Download one crackling-fire MP3 from: https://pixabay.com/th/sound-effects/search/crackling%20fire/
-- Store it in `assets/audio/fire_crackle.mp3` (not included in this zip).
+- Store it in `artifacts/audio/` and update the host to point at the file.
 
 ## License cautions
 From Pixabay's license summary/FAQ:
