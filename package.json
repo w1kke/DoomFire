@@ -1,0 +1,12 @@
+{
+  "name": "doomfire-prototype",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Spec/test-driven prototype for the Cozy DoomFire host and agent.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
