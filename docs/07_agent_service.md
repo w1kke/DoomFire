@@ -53,6 +53,11 @@ Responses are JSON:
 - Render returns `{ "ok": true, "messages": [ ...A2UI messages... ] }`.
 - Event returns `{ "ok": true, "messages": [ ...A2UI dataModelUpdate messages... ] }`.
 
+Optional session scoping:
+- Include a top-level `sessionId` string on renderWidget/event payloads to scope state per live session.
+- Example render: `{"type":"renderWidget","widgetId":"com.cozy.doomfire.live","params":{"mode":"interactive","seed":1337},"sessionId":"session-1"}`
+- Example event: `{"type":"event","event":{"type":"fire.applySettings","payload":{...}},"sessionId":"session-1"}`
+
 ## ElizaOS project (real agent)
 The real ElizaOS agent lives in `agent/eliza-develop/packages/project-cozy-doomfire`.
 It registers plugin routes via a `routes` array and runs under the ElizaOS server

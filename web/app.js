@@ -1,4 +1,4 @@
-import { createCanvasRenderer } from "./doomfire.js";
+import { createCanvasRenderer, hashFrameFromSettings } from "./doomfire.js";
 import { createCracklePlayer } from "./audio.js";
 
 const CRACKLE_AUDIO_URL = "/artifacts/audio/fireplace-loop-original-noise-178209.mp3";
@@ -7,6 +7,7 @@ const previewRoot = document.getElementById("preview-root");
 const previewFallback = document.getElementById("preview-fallback");
 const liveRoot = document.getElementById("live-root");
 const liveBadge = document.getElementById("live-badge");
+const liveError = document.getElementById("live-error");
 
 const state = {
   manifestConfig: getManifestConfig(),
@@ -14,6 +15,7 @@ const state = {
   liveSurface: null,
   narration: null,
   fireRenderer: null,
+  fireCanvas: null,
   fireSettings: null,
   stagedSettings: null,
   fireAnimationId: null,
@@ -47,18 +49,31 @@ async function handleOpenLive() {
     return;
   }
 
+  clearLiveError();
   const query = buildManifestQuery();
-  const response = await fetch(
-    query ? `/api/live/start?${query}` : "/api/live/start",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userInitiated: true }),
+  let data = null;
+  try {
+    const requestBody = { userInitiated: true };
+    if (state.manifestConfig.agentEndpoint) {
+      requestBody.agentEndpoint = state.manifestConfig.agentEndpoint;
     }
-  );
-
-  const data = await response.json();
+    const response = await fetch(
+      query ? `/api/live/start?${query}` : "/api/live/start",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      }
+    );
+    data = await response.json();
+  } catch (error) {
+    resetLiveUi();
+    showLiveError({ error: { code: "live_request_failed" } });
+    return;
+  }
   if (!data.ok) {
+    resetLiveUi();
+    showLiveError(data);
     return;
   }
 
@@ -69,6 +84,44 @@ async function handleOpenLive() {
     renderLiveSurface(data.surface);
   }
   syncAudioVolume(state.fireSettings);
+}
+
+function resetLiveUi() {
+  state.live = false;
+  state.liveSurface = null;
+  if (state.fireRenderer && typeof state.fireRenderer.stop === "function") {
+    state.fireRenderer.stop();
+  }
+  state.fireRenderer = null;
+  state.fireCanvas = null;
+  state.fireSettings = null;
+  state.stagedSettings = null;
+  liveBadge.hidden = true;
+  liveRoot.innerHTML = "";
+}
+
+function showLiveError(data) {
+  if (!liveError) {
+    return;
+  }
+  liveError.hidden = false;
+  liveError.textContent = formatLiveError(data);
+}
+
+function clearLiveError() {
+  if (!liveError) {
+    return;
+  }
+  liveError.hidden = true;
+  liveError.textContent = "";
+}
+
+function formatLiveError(data) {
+  const code = data?.error?.code;
+  if (!code) {
+    return "Live session unavailable.";
+  }
+  return `Live session error: ${String(code).replace(/_/g, " ")}`;
 }
 
 function renderLiveSurface(surface) {
@@ -294,6 +347,8 @@ function renderDoomFireCanvas(props) {
   const settings = mergeSettings(state.fireSettings, props?.appliedSettings);
   state.fireSettings = settings;
   state.stagedSettings = state.stagedSettings || { ...settings };
+  state.fireCanvas = canvas;
+  canvas.dataset.frameHash = hashFrameFromSettings(settings);
   state.fireRenderer = createCanvasRenderer(canvas, settings);
   return canvas;
 }
@@ -331,6 +386,9 @@ function applySettingsUpdate(applied) {
   const previous = state.fireSettings || nextSettings;
   state.fireSettings = nextSettings;
   state.stagedSettings = { ...nextSettings };
+  if (state.fireCanvas) {
+    state.fireCanvas.dataset.frameHash = hashFrameFromSettings(nextSettings);
+  }
   syncControls();
   syncAudioVolume(nextSettings);
 
@@ -519,6 +577,7 @@ function getManifestConfig() {
       agentId,
       agentRegistry: params.get("agentRegistry"),
       manifestPath: null,
+      agentEndpoint: params.get("agentEndpoint"),
     };
   }
 
@@ -526,6 +585,7 @@ function getManifestConfig() {
     manifestPath: getManifestPath() || "artifacts/ui-manifest.v2.json",
     agentId: null,
     agentRegistry: null,
+    agentEndpoint: params.get("agentEndpoint"),
   };
 }
 
@@ -536,10 +596,20 @@ function buildManifestQuery() {
     if (state.manifestConfig.agentRegistry) {
       params.set("agentRegistry", state.manifestConfig.agentRegistry);
     }
+    if (state.manifestConfig.agentEndpoint) {
+      params.set("agentEndpoint", state.manifestConfig.agentEndpoint);
+    }
     return params.toString();
   }
   if (state.manifestConfig.manifestPath) {
     params.set("manifest", state.manifestConfig.manifestPath);
+    if (state.manifestConfig.agentEndpoint) {
+      params.set("agentEndpoint", state.manifestConfig.agentEndpoint);
+    }
+    return params.toString();
+  }
+  if (state.manifestConfig.agentEndpoint) {
+    params.set("agentEndpoint", state.manifestConfig.agentEndpoint);
     return params.toString();
   }
   return "";

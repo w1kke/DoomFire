@@ -30,6 +30,20 @@ const MIME_TYPES = {
 let liveSession = null;
 let liveSurfaceId = null;
 let liveAgentClient = null;
+let liveSessionId = null;
+let liveSessionCounter = 0;
+
+function resetLiveSession() {
+  liveSession = null;
+  liveSurfaceId = null;
+  liveAgentClient = null;
+  liveSessionId = null;
+}
+
+function createSessionId() {
+  liveSessionCounter += 1;
+  return `session-${liveSessionCounter}`;
+}
 
 function resolveManifestPath(manifestParam) {
   const defaultPath = path.join(ARTIFACTS_DIR, "ui-manifest.v2.json");
@@ -76,17 +90,18 @@ function handleLiveStart(request, response, url) {
       }
 
       const widget = manifestResult.manifest.widgets[0];
-      liveSession = createLiveSession({ widget });
-      liveSurfaceId = widget?.surfaceContract?.surfaceIds?.[0] || "main";
-      liveAgentClient = null;
+      resetLiveSession();
+      const nextSession = createLiveSession({ widget });
+      const nextSurfaceId = widget?.surfaceContract?.surfaceIds?.[0] || "main";
 
-      const start = liveSession.start({ userInitiated: body?.userInitiated === true });
+      const start = nextSession.start({ userInitiated: body?.userInitiated === true });
       if (!start.ok) {
         return sendJson(response, 403, { ok: false, error: start.error });
       }
 
       const agentEndpoint = resolveAgentEndpoint({
         agentCard: manifestResult.agentCard,
+        override: body?.agentEndpoint || url.searchParams.get("agentEndpoint"),
       });
 
       if (!agentEndpoint) {
@@ -96,8 +111,9 @@ function handleLiveStart(request, response, url) {
         });
       }
 
+      let nextAgentClient = null;
       try {
-        liveAgentClient = createAgentClient({ endpointUrl: agentEndpoint });
+        nextAgentClient = createAgentClient({ endpointUrl: agentEndpoint });
       } catch (error) {
         return sendJson(response, 400, {
           ok: false,
@@ -106,12 +122,14 @@ function handleLiveStart(request, response, url) {
       }
 
       const invocation = widget?.invocation?.request || {};
+      const nextSessionId = createSessionId();
       const renderRequest = {
         widgetId: invocation.widgetId || widget?.id,
         params: invocation.params || { mode: "interactive" },
+        sessionId: nextSessionId,
       };
 
-      const renderResult = await liveAgentClient.renderWidget(renderRequest);
+      const renderResult = await nextAgentClient.renderWidget(renderRequest);
       if (!renderResult.ok || !Array.isArray(renderResult.messages)) {
         return sendJson(response, 502, {
           ok: false,
@@ -119,13 +137,25 @@ function handleLiveStart(request, response, url) {
         });
       }
 
-      renderResult.messages.forEach((message) => liveSession.applyMessage(message));
+      renderResult.messages.forEach((message) => nextSession.applyMessage(message));
 
-      const surface = liveSession.getSurface(liveSurfaceId);
+      const surface = nextSession.getSurface(nextSurfaceId);
+      if (!surface || !surface.rootId || !surface.components) {
+        return sendJson(response, 502, {
+          ok: false,
+          error: { code: "agent_render_invalid" },
+        });
+      }
+
+      resetLiveSession();
+      liveSession = nextSession;
+      liveSurfaceId = nextSurfaceId;
+      liveAgentClient = nextAgentClient;
+      liveSessionId = nextSessionId;
       return sendJson(response, 200, {
         ok: true,
-        live: liveSession.isLive(),
-        liveBadge: liveSession.isLiveBadgeVisible(),
+        live: nextSession.isLive(),
+        liveBadge: nextSession.isLiveBadgeVisible(),
         surface,
       });
     } catch (error) {
@@ -158,7 +188,10 @@ function handleLiveEvent(request, response) {
       return sendJson(response, 403, { ok: false, error: dispatched.error });
     }
 
-    const agentResult = await liveAgentClient.sendEvent({ event });
+    const agentResult = await liveAgentClient.sendEvent({
+      event,
+      sessionId: liveSessionId,
+    });
     if (!agentResult.ok) {
       return sendJson(response, 502, {
         ok: false,
@@ -291,7 +324,10 @@ async function resolveManifestFromChain({ agentId, agentRegistry }) {
   }
 }
 
-function resolveAgentEndpoint({ agentCard }) {
+function resolveAgentEndpoint({ agentCard, override }) {
+  if (override && typeof override === "string") {
+    return override;
+  }
   const fromCard = findAgentEndpoint(agentCard);
   if (fromCard) {
     return fromCard;

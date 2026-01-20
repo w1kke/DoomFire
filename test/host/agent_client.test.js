@@ -67,3 +67,36 @@ test("createAgentClient sends event payloads", async () => {
     event: { type: "fire.applySettings", payload: { presetId: "cozy_amber" } },
   });
 });
+
+test("createAgentClient forwards sessionId when provided", async () => {
+  const calls = [];
+  const fetchStub = async (url, options) => {
+    calls.push({ url, options });
+    return {
+      ok: true,
+      async json() {
+        return { ok: true, messages: [] };
+      },
+    };
+  };
+
+  const client = createAgentClient({
+    endpointUrl: "http://agent.local/a2a",
+    fetchImpl: fetchStub,
+  });
+
+  await client.renderWidget({
+    widgetId: "com.cozy.doomfire.live",
+    params: { mode: "interactive", seed: 1337 },
+    sessionId: "session-1",
+  });
+
+  await client.sendEvent({
+    event: { type: "fire.applySettings", payload: { presetId: "cozy_amber" } },
+    sessionId: "session-1",
+  });
+
+  assert.equal(calls.length, 2);
+  assert.equal(JSON.parse(calls[0].options.body).sessionId, "session-1");
+  assert.equal(JSON.parse(calls[1].options.body).sessionId, "session-1");
+});

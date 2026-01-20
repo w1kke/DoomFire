@@ -4,13 +4,25 @@ function createAgentClient({ endpointUrl, fetchImpl } = {}) {
   }
 
   const fetcher = fetchImpl || fetch;
+  const timeoutMs = 5000;
 
   async function post(payload) {
-    const response = await fetcher(endpointUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    let response = null;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      response = await fetcher(endpointUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      const code = error?.name === "AbortError" ? "agent_timeout" : "agent_unreachable";
+      return { ok: false, error: { code } };
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     let json = null;
     try {
@@ -29,12 +41,20 @@ function createAgentClient({ endpointUrl, fetchImpl } = {}) {
     return json;
   }
 
-  function renderWidget({ widgetId, params }) {
-    return post({ type: "renderWidget", widgetId, params });
+  function renderWidget({ widgetId, params, sessionId }) {
+    const payload = { type: "renderWidget", widgetId, params };
+    if (typeof sessionId === "string" && sessionId.length > 0) {
+      payload.sessionId = sessionId;
+    }
+    return post(payload);
   }
 
-  function sendEvent({ event }) {
-    return post({ type: "event", event });
+  function sendEvent({ event, sessionId }) {
+    const payload = { type: "event", event };
+    if (typeof sessionId === "string" && sessionId.length > 0) {
+      payload.sessionId = sessionId;
+    }
+    return post(payload);
   }
 
   return {

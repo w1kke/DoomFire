@@ -105,6 +105,7 @@ function createCanvasRenderer(canvas, settings = {}) {
   }
 
   let imageData = prepareCanvas(canvas, context, simulation);
+  updateFrameHash(canvas, simulation);
   let animationId = null;
 
   function draw() {
@@ -135,6 +136,7 @@ function createCanvasRenderer(canvas, settings = {}) {
   function updateSettings(nextSettings = {}) {
     simulation = createFireSimulation({ ...simulation.settings, ...nextSettings });
     imageData = prepareCanvas(canvas, context, simulation);
+    updateFrameHash(canvas, simulation);
   }
 
   start();
@@ -209,6 +211,28 @@ function renderFrame(simulation, target) {
   }
 
   return frame;
+}
+
+function updateFrameHash(canvas, simulation) {
+  if (!canvas || !canvas.dataset) {
+    return;
+  }
+  const frame = renderFrame(simulation);
+  canvas.dataset.frameHash = hashFrame(frame);
+}
+
+function hashFrame(frame) {
+  let hash = 2166136261;
+  for (let i = 0; i < frame.length; i += 1) {
+    hash ^= frame[i];
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function hashFrameFromSettings(settings = {}) {
+  const simulation = createFireSimulation(settings);
+  return hashFrame(renderFrame(simulation));
 }
 
 function seedBottomRow(simulation) {
@@ -291,4 +315,4 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-export { createCanvasRenderer };
+export { createCanvasRenderer, hashFrameFromSettings };

@@ -53,16 +53,47 @@ type AgentState = {
 };
 
 const baseBundle = loadBundle();
-const stateByAgent = new Map<string, AgentState>();
+const stateBySession = new Map<string, AgentState>();
 
 function loadBundle(): { messages?: unknown[] } {
   const raw = readFileSync(LIVE_BUNDLE_PATH, 'utf8');
   return JSON.parse(raw) as { messages?: unknown[] };
 }
 
-function getState(runtime: IAgentRuntime): AgentState {
-  const key = runtime.agentId || 'default';
-  const existing = stateByAgent.get(key);
+function readSessionId(req: RouteRequest | undefined): string | null {
+  const body = req?.body;
+  if (!body || typeof body !== 'object') {
+    return null;
+  }
+  const sessionId = (body as { sessionId?: unknown }).sessionId;
+  if (typeof sessionId !== 'string' || sessionId.length === 0) {
+    return null;
+  }
+  return sessionId;
+}
+
+function logDebug(
+  runtime: IAgentRuntime,
+  message: string,
+  details: Record<string, unknown>
+): void {
+  if (!runtime?.logger || typeof runtime.logger.debug !== 'function') {
+    return;
+  }
+  runtime.logger.debug({ src: 'plugin:cozy-doomfire', ...details }, message);
+}
+
+function resolveSessionKey(runtime: IAgentRuntime, req?: RouteRequest): string {
+  const sessionId = readSessionId(req);
+  if (sessionId) {
+    return `session:${sessionId}`;
+  }
+  return runtime.agentId || 'default';
+}
+
+function getState(runtime: IAgentRuntime, req?: RouteRequest): AgentState {
+  const key = resolveSessionKey(runtime, req);
+  const existing = stateBySession.get(key);
   if (existing) {
     return existing;
   }
@@ -71,7 +102,7 @@ function getState(runtime: IAgentRuntime): AgentState {
     applied: { ...DEFAULT_SETTINGS },
     narration: { ...DEFAULT_NARRATION },
   };
-  stateByAgent.set(key, created);
+  stateBySession.set(key, created);
   return created;
 }
 
@@ -165,12 +196,17 @@ function handleRenderWidget(
   runtime: IAgentRuntime
 ): void {
   const body = req.body as { widgetId?: string; params?: { seed?: number } } | undefined;
+  const sessionId = readSessionId(req) || undefined;
+  logDebug(runtime, 'A2A renderWidget', {
+    widgetId: body?.widgetId || WIDGET_ID,
+    sessionId,
+  });
   if (body?.widgetId && body.widgetId !== WIDGET_ID) {
     sendJson(res, 400, { ok: false, error: { code: 'unknown_widget' } });
     return;
   }
 
-  const state = getState(runtime);
+  const state = getState(runtime, req);
   const seed = body?.params?.seed;
   if (typeof seed === 'number') {
     state.applied = { ...state.applied, seed };
@@ -205,9 +241,19 @@ function handleEvent(
     sendJson(res, 400, { ok: false, error: { code: 'event_missing' } });
     return;
   }
+  const sessionId = readSessionId(req) || undefined;
+  const eventType = typeof event.type === 'string' ? event.type : 'unknown';
+  const presetId =
+    eventType === 'fire.applySettings' &&
+    event.payload &&
+    typeof event.payload === 'object' &&
+    typeof (event.payload as { presetId?: unknown }).presetId === 'string'
+      ? (event.payload as { presetId: string }).presetId
+      : undefined;
+  logDebug(runtime, 'A2A event', { eventType, presetId, sessionId });
 
   if (event.type === 'fire.applySettings') {
-    const state = getState(runtime);
+    const state = getState(runtime, req);
     const settings = sanitizeSettings(event.payload, state.applied);
     state.applied = { ...state.applied, ...settings };
     state.staged = { ...state.staged, ...settings };

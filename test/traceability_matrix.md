@@ -16,8 +16,9 @@ Notes:
 - AC-001 preview render from manifest covered by manifest loader tests.
 - AC-003 pointer chain covered by ERC-8004 resolver + RPC chain reader tests with mocked fetch.
 - DF-LIVE-001/002/003 covered by live session unit tests (gating, surfaces, events).
-- DF-LIVE-004 covered by agent client unit test + Playwright live session test (agent endpoint via `agent/eliza-develop/packages/project-cozy-doomfire/src/server.ts`).
+- DF-LIVE-004 covered by agent client unit test + Playwright live session tests (agent endpoint via `agent/eliza-develop/packages/project-cozy-doomfire/src/server.ts`, unreachable agent handling, Ignite palette hash change).
 - DF-AGENT-001 covered by ElizaOS plugin unit test in `agent/eliza-develop/packages/project-cozy-doomfire/src/__tests__/plugin.test.ts`.
+- Agent session scoping covered by ElizaOS plugin unit test using `sessionId`.
 - AC-006/007 covered by ignite flow + agent narration tests.
 - DF-FX-001 covered by doomfire deterministic hash test.
 - DF-AUD-001/002 covered by audio controller gesture + loop envelope tests.

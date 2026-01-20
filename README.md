@@ -69,6 +69,7 @@ A2A_ENDPOINT="http://127.0.0.1:4174/cozy-doomfire/a2a" npm run dev
 Open:
 - `http://127.0.0.1:4173/?manifest=test/test_vectors/manifest.preview.good.json`
 - `http://127.0.0.1:4173/?agentId=<AGENT_ID>`
+- Optional override for testing: append `&agentEndpoint=http://127.0.0.1:4174/cozy-doomfire/a2a`.
 
 Audio:
 - Put the crackle MP3 in `artifacts/audio/` and update `web/app.js` if you rename it.
