@@ -26,6 +26,7 @@ Given `agentRegistry` = Base Sepolia IdentityRegistry and `agentId`:
 ## AC-005 — Agent fully authors the UI
 - The host does not hard-code widget layout.
 - All UI updates come from A2UI messages.
+- Live UI is delivered by the agent endpoint (A2A).
 
 ## AC-006 — Ignite is a single event
 - Changing controls does not send any event.

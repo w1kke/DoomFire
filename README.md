@@ -42,12 +42,28 @@ npm install
 npx playwright install chromium
 ```
 
+ElizaOS dependencies are required for the Playwright suite (real agent):
+
 ```bash
-npm test
+cd agent/eliza-develop
+bun install
 ```
 
 ```bash
-npm run dev
+npm test
+```
+If port 4174 is busy, set `A2A_PORT=4175` (or another free port) for Playwright.
+
+Run the real ElizaOS agent in one terminal, then the host in another:
+
+```bash
+cd agent/eliza-develop/packages/project-cozy-doomfire
+bun run start -- --port 4174
+```
+First run builds the ElizaOS server packages if `dist/` outputs are missing.
+
+```bash
+A2A_ENDPOINT="http://127.0.0.1:4174/cozy-doomfire/a2a" npm run dev
 ```
 
 Open:
@@ -56,6 +72,14 @@ Open:
 
 Audio:
 - Put the crackle MP3 in `artifacts/audio/` and update `web/app.js` if you rename it.
+
+## Optional: run the legacy stub agent
+
+```bash
+npm run agent
+```
+
+Use `A2A_ENDPOINT="http://127.0.0.1:4174/a2a"` when pointing the host at the stub.
 
 ## References
 

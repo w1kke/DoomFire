@@ -1,0 +1,22 @@
+{
+  "name": "@elizaos/project-cozy-doomfire",
+  "description": "Cozy DoomFire agent project for elizaOS",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "scripts": {
+    "start": "bun src/server.ts",
+    "dev": "bun --watch src/server.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@elizaos/cli": "workspace:*",
+    "@elizaos/core": "workspace:*",
+    "@elizaos/server": "workspace:*",
+    "@elizaos/plugin-sql": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

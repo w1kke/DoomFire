@@ -6,7 +6,7 @@ const { URL } = require("node:url");
 const { loadManifestFromFile } = require("./host/manifest_loader.js");
 const { renderPreviewFromManifest } = require("./host/preview_renderer.js");
 const { createLiveSession } = require("./host/live_session.js");
-const { respondToIgnite } = require("./agent/ignite_responder.js");
+const { createAgentClient } = require("./host/agent_client.js");
 const { resolvePointerChain } = require("./host/erc8004_resolver.js");
 const { createRpcChainReader } = require("./host/erc8004_chain_reader.js");
 
@@ -29,6 +29,7 @@ const MIME_TYPES = {
 
 let liveSession = null;
 let liveSurfaceId = null;
+let liveAgentClient = null;
 
 function resolveManifestPath(manifestParam) {
   const defaultPath = path.join(ARTIFACTS_DIR, "ui-manifest.v2.json");
@@ -46,12 +47,6 @@ function resolveManifestPath(manifestParam) {
     return null;
   }
   return candidate;
-}
-
-function loadLiveBundle() {
-  const bundlePath = path.join(ARTIFACTS_DIR, "live-bundle.json");
-  const raw = fs.readFileSync(bundlePath, "utf8");
-  return JSON.parse(raw);
 }
 
 async function handlePreview(request, response, url) {
@@ -83,16 +78,48 @@ function handleLiveStart(request, response, url) {
       const widget = manifestResult.manifest.widgets[0];
       liveSession = createLiveSession({ widget });
       liveSurfaceId = widget?.surfaceContract?.surfaceIds?.[0] || "main";
+      liveAgentClient = null;
 
       const start = liveSession.start({ userInitiated: body?.userInitiated === true });
       if (!start.ok) {
         return sendJson(response, 403, { ok: false, error: start.error });
       }
 
-      const bundle = loadLiveBundle();
-      if (Array.isArray(bundle.messages)) {
-        bundle.messages.forEach((message) => liveSession.applyMessage(message));
+      const agentEndpoint = resolveAgentEndpoint({
+        agentCard: manifestResult.agentCard,
+      });
+
+      if (!agentEndpoint) {
+        return sendJson(response, 400, {
+          ok: false,
+          error: { code: "agent_endpoint_missing" },
+        });
       }
+
+      try {
+        liveAgentClient = createAgentClient({ endpointUrl: agentEndpoint });
+      } catch (error) {
+        return sendJson(response, 400, {
+          ok: false,
+          error: { code: "agent_endpoint_invalid" },
+        });
+      }
+
+      const invocation = widget?.invocation?.request || {};
+      const renderRequest = {
+        widgetId: invocation.widgetId || widget?.id,
+        params: invocation.params || { mode: "interactive" },
+      };
+
+      const renderResult = await liveAgentClient.renderWidget(renderRequest);
+      if (!renderResult.ok || !Array.isArray(renderResult.messages)) {
+        return sendJson(response, 502, {
+          ok: false,
+          error: renderResult.error || { code: "agent_render_failed" },
+        });
+      }
+
+      renderResult.messages.forEach((message) => liveSession.applyMessage(message));
 
       const surface = liveSession.getSurface(liveSurfaceId);
       return sendJson(response, 200, {
@@ -111,11 +138,17 @@ function handleLiveStart(request, response, url) {
 }
 
 function handleLiveEvent(request, response) {
-  collectJson(request, (body) => {
+  collectJson(request, async (body) => {
     if (!liveSession) {
       return sendJson(response, 400, {
         ok: false,
         error: { code: "session_missing" },
+      });
+    }
+    if (!liveAgentClient) {
+      return sendJson(response, 400, {
+        ok: false,
+        error: { code: "agent_session_missing" },
       });
     }
 
@@ -125,12 +158,18 @@ function handleLiveEvent(request, response) {
       return sendJson(response, 403, { ok: false, error: dispatched.error });
     }
 
-    let updates = [];
-    if (event?.type === "fire.applySettings") {
-      updates = respondToIgnite({ event });
+    const agentResult = await liveAgentClient.sendEvent({ event });
+    if (!agentResult.ok) {
+      return sendJson(response, 502, {
+        ok: false,
+        error: agentResult.error || { code: "agent_event_failed" },
+      });
     }
 
-    return sendJson(response, 200, { ok: true, updates });
+    return sendJson(response, 200, {
+      ok: true,
+      updates: collectAgentUpdates(agentResult),
+    });
   });
 }
 
@@ -213,7 +252,7 @@ async function resolveManifestFromRequest(url) {
     return { ok: false, error: manifestResult.error };
   }
 
-  return { ok: true, manifest: manifestResult.value };
+  return { ok: true, manifest: manifestResult.value, agentCard: null };
 }
 
 async function resolveManifestFromChain({ agentId, agentRegistry }) {
@@ -250,6 +289,58 @@ async function resolveManifestFromChain({ agentId, agentRegistry }) {
       error: { code: "pointer_chain_failed" },
     };
   }
+}
+
+function resolveAgentEndpoint({ agentCard }) {
+  const fromCard = findAgentEndpoint(agentCard);
+  if (fromCard) {
+    return fromCard;
+  }
+  return process.env.A2A_ENDPOINT || process.env.AGENT_ENDPOINT || null;
+}
+
+function findAgentEndpoint(agentCard) {
+  const endpoints = agentCard?.endpoints;
+  if (!Array.isArray(endpoints)) {
+    return null;
+  }
+  const entry = endpoints.find(
+    (endpoint) =>
+      endpoint &&
+      endpoint.name === "A2A" &&
+      typeof endpoint.endpoint === "string"
+  );
+  return entry ? entry.endpoint : null;
+}
+
+function collectAgentUpdates(agentResult) {
+  if (Array.isArray(agentResult.updates)) {
+    return agentResult.updates;
+  }
+
+  if (!Array.isArray(agentResult.messages)) {
+    return [];
+  }
+
+  const updates = [];
+  agentResult.messages.forEach((message) => {
+    const patch = message?.dataModelUpdate?.patch;
+    if (!patch || typeof patch !== "object") {
+      return;
+    }
+    const update = {};
+    if (patch.applied) {
+      update.applied = patch.applied;
+    }
+    if (patch.narration) {
+      update.narration = patch.narration;
+    }
+    if (Object.keys(update).length > 0) {
+      updates.push(update);
+    }
+  });
+
+  return updates;
 }
 
 function normalizeRegistryAddress(registry) {

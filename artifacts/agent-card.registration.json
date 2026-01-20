@@ -5,7 +5,7 @@
   "endpoints": [
     {
       "name": "A2A",
-      "endpoint": "https://<YOUR_AGENT_HOST>/a2a",
+      "endpoint": "https://<YOUR_AGENT_HOST>/cozy-doomfire/a2a",
       "version": "1.0"
     },
     {

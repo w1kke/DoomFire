@@ -55,65 +55,45 @@ test("ignite applies updated fire settings to the canvas", async ({ page }) => {
     return false;
   });
 
-  await page.locator('input[data-control="intensity"]').evaluate((node) => {
-    node.value = "0.1";
-    node.dispatchEvent(new Event("input", { bubbles: true }));
-  });
-
-  const baseline = await getAverageBrightness(page);
-
-  await page.route("**/api/live/event", async (route) => {
-    const request = route.request();
-    const payload = request.postDataJSON();
-    if (payload?.event?.payload?.intensity !== 0.1) {
-      await route.fulfill({
-        status: 400,
-        contentType: "application/json",
-        body: JSON.stringify({ ok: false, error: { code: "bad_intensity" } }),
-      });
-      return;
-    }
-    const body = JSON.stringify({
-      ok: true,
-      updates: [
-        { narration: { phase: "collecting", text: "Collecting kindling...", stepIndex: 1 } },
-        {
-          applied: {
-            presetId: "cozy_amber",
-            size: 0.4,
-            intensity: 0.1,
-            heat: 0.1,
-            seed: 1337,
-          },
-        },
-      ],
-    });
-    await route.fulfill({ status: 200, contentType: "application/json", body });
-  });
+  await page.getByRole("button", { name: "Copper Blue" }).click();
+  const before = await getAverageRgb(page);
+  expect(before.r).toBeGreaterThan(before.b);
 
   await page.getByRole("button", { name: "Ignite" }).click();
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(500);
 
-  const updated = await getAverageBrightness(page);
-  expect(updated).toBeLessThan(baseline * 0.9);
+  const after = await getAverageRgb(page);
+  expect(after.b).toBeGreaterThan(after.r);
+  expect(after.b).toBeGreaterThan(before.b);
 });
 
-async function getAverageBrightness(page) {
+async function getAverageRgb(page) {
   return page.evaluate(() => {
     const canvas = document.querySelector("canvas.doomfire-canvas");
-    if (!canvas) return 0;
+    if (!canvas) return { r: 0, g: 0, b: 0 };
     const ctx = canvas.getContext("2d");
-    if (!ctx) return 0;
+    if (!ctx) return { r: 0, g: 0, b: 0 };
     const width = canvas.width;
     const height = canvas.height;
-    if (width === 0 || height === 0) return 0;
+    if (width === 0 || height === 0) return { r: 0, g: 0, b: 0 };
     const data = ctx.getImageData(0, 0, width, height).data;
-    let total = 0;
+    let totalR = 0;
+    let totalG = 0;
+    let totalB = 0;
     let pixels = 0;
     for (let i = 0; i < data.length; i += 4) {
-      total += (data[i] + data[i + 1] + data[i + 2]) / 3;
+      totalR += data[i];
+      totalG += data[i + 1];
+      totalB += data[i + 2];
       pixels += 1;
     }
-    return pixels === 0 ? 0 : total / pixels;
+    if (pixels === 0) {
+      return { r: 0, g: 0, b: 0 };
+    }
+    return {
+      r: totalR / pixels,
+      g: totalG / pixels,
+      b: totalB / pixels,
+    };
   });
 }

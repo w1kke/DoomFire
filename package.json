@@ -7,6 +7,7 @@
     "test:unit": "node --test test/agent/*.test.js test/audio/*.test.js test/deployment/*.test.js test/doomfire/*.test.js test/host/*.test.js test/validation/*.test.js",
     "test:e2e": "playwright test",
     "test": "node --test test/agent/*.test.js test/audio/*.test.js test/deployment/*.test.js test/doomfire/*.test.js test/host/*.test.js test/validation/*.test.js && playwright test",
+    "agent": "node src/agent/server.js",
     "dev": "node src/server.js"
   },
   "engines": {

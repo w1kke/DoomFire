@@ -40,6 +40,15 @@ This test plan is intentionally derived from the broader A2UI security test disc
 - Attempt to send event type not in widget contract
 - Expected: blocked
 
+### DF-LIVE-004 Agent endpoint drives live UI
+- Start live session and request renderWidget from agent endpoint
+- Expected: UI renders only from agent response
+
+## DF-AGENT — Agent routes
+### DF-AGENT-001 Routes exposed via plugin
+- Agent plugin exposes POST /a2a and POST /event routes
+- Expected: event route returns dataModelUpdate with applied preset changes
+
 ## DF-FX — DoomFire determinism
 ### DF-FX-001 Deterministic framebuffer hash
 - Render 300 frames with same seed/settings
