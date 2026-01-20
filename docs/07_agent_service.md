@@ -32,6 +32,7 @@ The agent should produce the full A2UI tree:
 - Title + tagline
 - DoomFireCanvas viewport component
 - Preset selector + sliders
+- Reset button (host-only) to restore staged values
 - Ignite button
 - Narration text area
 - Toggle for audio (or a distinct button that can satisfy browser audio-gesture requirements)

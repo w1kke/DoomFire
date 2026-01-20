@@ -12,8 +12,8 @@
         <header class="panel__header">
           <h1 class="panel__title">Preview</h1>
         </header>
-        <div id="preview-root" class="panel__body"></div>
-        <div id="preview-fallback" class="panel__fallback" hidden>
+        <div id="preview-root" class="panel__body" data-testid="preview-root"></div>
+        <div id="preview-fallback" class="panel__fallback" data-testid="preview-fallback" hidden>
           Preview unavailable.
         </div>
       </section>
@@ -21,10 +21,10 @@
       <section class="panel">
         <header class="panel__header panel__header--live">
           <h2 class="panel__title">Live Session</h2>
-          <span id="live-badge" class="live-badge" hidden>LIVE</span>
+          <span id="live-badge" class="live-badge" data-testid="live-badge" hidden>LIVE</span>
         </header>
-        <div id="live-root" class="panel__body"></div>
-        <div id="live-error" class="panel__fallback" hidden>
+        <div id="live-root" class="panel__body" data-testid="live-root"></div>
+        <div id="live-error" class="panel__fallback" data-testid="live-error" hidden>
           Live session unavailable.
         </div>
       </section>

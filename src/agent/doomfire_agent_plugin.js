@@ -174,6 +174,13 @@ function loadLiveBundleMessages(state) {
     }
 
     update.components.forEach((component) => {
+      if (component?.id === "narration") {
+        const textNode = component?.component?.Text?.text;
+        if (textNode && typeof state.narration?.text === "string") {
+          textNode.literalString = state.narration.text;
+        }
+      }
+
       const entry = component?.component?.DoomFireCanvas;
       if (!entry || !entry.appliedSettings) {
         return;

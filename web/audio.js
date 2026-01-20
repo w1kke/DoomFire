@@ -10,10 +10,14 @@ function createCracklePlayer({ url, loopFadeSeconds = 0.04 } = {}) {
   let volume = 0.5;
 
   function updateDebugState() {
+    if (window.__PLAYWRIGHT__ !== true) {
+      return;
+    }
     window.__audioState = {
       enabled,
       playing,
       volume,
+      contextState: context ? context.state : "unsupported",
     };
   }
 
@@ -125,6 +129,14 @@ function createCracklePlayer({ url, loopFadeSeconds = 0.04 } = {}) {
     start,
     stop,
     setVolume,
+    getState() {
+      return {
+        enabled,
+        isPlaying: playing,
+        contextState: context ? context.state : "unsupported",
+        volume,
+      };
+    },
   };
 }
 

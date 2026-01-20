@@ -1,0 +1,82 @@
+{
+  "a2uiVersion": "0.8",
+  "encoding": "json-array",
+  "messages": [
+    {
+      "surfaceUpdate": {
+        "surfaceId": "preview",
+        "components": [
+          {
+            "id": "root",
+            "component": {
+              "Text": {
+                "text": {
+                  "literalString": "Deep",
+                  "meta": {
+                    "nested": {
+                      "nested": {
+                        "nested": {
+                          "nested": {
+                            "nested": {
+                              "nested": {
+                                "nested": {
+                                  "nested": {
+                                    "nested": {
+                                      "nested": {
+                                        "nested": {
+                                          "nested": {
+                                            "nested": {
+                                              "nested": {
+                                                "nested": {
+                                                  "nested": {
+                                                    "nested": {
+                                                      "nested": {
+                                                        "nested": {
+                                                          "nested": {
+                                                            "nested": {
+                                                              "nested": {
+                                                                "nested": {
+                                                                  "nested": {
+                                                                    "nested": {
+                                                                      "end": "value"
+                                                                    }
+                                                                  }
+                                                                }
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "beginRendering": {
+        "surfaceId": "preview",
+        "root": "root"
+      }
+    }
+  ]
+}

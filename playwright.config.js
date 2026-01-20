@@ -6,8 +6,11 @@ const agentBaseUrl = `http://127.0.0.1:${agentPort}`;
 module.exports = defineConfig({
   testDir: "test/e2e",
   timeout: 30000,
+  workers: 1,
   use: {
     baseURL: "http://127.0.0.1:4173",
+    viewport: { width: 1280, height: 720 },
+    deviceScaleFactor: 1,
   },
   webServer: [
     {
@@ -30,6 +33,7 @@ module.exports = defineConfig({
         PORT: "4173",
         HOST: "127.0.0.1",
         NODE_ENV: "test",
+        PLAYWRIGHT: "1",
         A2A_ENDPOINT: `${agentBaseUrl}/cozy-doomfire/a2a`,
       },
     },

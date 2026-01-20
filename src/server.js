@@ -230,11 +230,31 @@ function handleStatic(request, response, url) {
     }
 
     const ext = path.extname(resolvedPath);
+    if (filePath === "/index.html" && process.env.PLAYWRIGHT === "1") {
+      const html = data.toString("utf8");
+      const injected = injectPlaywrightFlag(html);
+      response.writeHead(200, {
+        "Content-Type": MIME_TYPES[ext] || "application/octet-stream",
+      });
+      response.end(injected);
+      return;
+    }
     response.writeHead(200, {
       "Content-Type": MIME_TYPES[ext] || "application/octet-stream",
     });
     response.end(data);
   });
+}
+
+function injectPlaywrightFlag(html) {
+  const snippet = "<script>window.__PLAYWRIGHT__=true;</script>";
+  if (html.includes("</head>")) {
+    return html.replace("</head>", `${snippet}\n</head>`);
+  }
+  if (html.includes("</body>")) {
+    return html.replace("</body>", `${snippet}\n</body>`);
+  }
+  return `${snippet}\n${html}`;
 }
 
 function handleArtifacts(request, response, url) {

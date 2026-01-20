@@ -1,27 +1,24 @@
 const { test, expect } = require("@playwright/test");
+const { waitForTestHook, openLive, getAudioState } = require("./doomfire_utils");
 
-test("audio starts only after explicit audio toggle", async ({ page }) => {
+test("Audio is opt-in and toggle works", async ({ page }) => {
   await page.goto("/?manifest=test/test_vectors/manifest.preview.good.json");
+  await waitForTestHook(page);
+  await openLive(page);
 
-  await page.getByRole("button", { name: "Open" }).click();
+  await expect(page.getByTestId("audio-toggle")).toBeVisible();
+  const initial = await getAudioState(page);
+  expect(initial).toMatchObject({ enabled: false, isPlaying: false });
 
-  const afterOpen = await page.evaluate(() => window.__audioState || null);
-  if (afterOpen) {
-    expect(afterOpen.enabled).toBeFalsy();
-    expect(afterOpen.playing).toBeFalsy();
-  }
-
-  await page.getByRole("button", { name: "Audio" }).click();
-
-  await page.waitForFunction(() => {
-    return (
-      window.__audioState &&
-      window.__audioState.enabled === true &&
-      window.__audioState.playing === true
-    );
+  await page.getByTestId("audio-toggle").click();
+  await expect.poll(async () => getAudioState(page)).toMatchObject({
+    enabled: true,
+    isPlaying: true,
   });
 
-  const afterToggle = await page.evaluate(() => window.__audioState);
-  expect(afterToggle.enabled).toBe(true);
-  expect(afterToggle.playing).toBe(true);
+  await page.getByTestId("audio-toggle").click();
+  await expect.poll(async () => getAudioState(page)).toMatchObject({
+    enabled: false,
+    isPlaying: false,
+  });
 });

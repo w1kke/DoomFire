@@ -1,0 +1,20 @@
+{
+  "a2uiVersion": "0.8",
+  "encoding": "json-array",
+  "messages": [
+    {
+      "surfaceUpdate": {
+        "surfaceId": "preview",
+        "components": [
+          {
+            "id": 123,
+            "component": {
+              "Text": {"text": {"literalString": "Invalid id"}}
+            }
+          }
+        ]
+      }
+    },
+    {"beginRendering": {"surfaceId": "preview", "root": "root"}}
+  ]
+}

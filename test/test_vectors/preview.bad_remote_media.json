@@ -1,0 +1,23 @@
+{
+  "a2uiVersion": "0.8",
+  "encoding": "json-array",
+  "messages": [
+    {
+      "surfaceUpdate": {
+        "surfaceId": "preview",
+        "components": [
+          {
+            "id": "root",
+            "component": {
+              "Image": {
+                "source": {"uri": "https://example.com/preview.png"},
+                "altText": {"literalString": "Preview"}
+              }
+            }
+          }
+        ]
+      }
+    },
+    {"beginRendering": {"surfaceId": "preview", "root": "root"}}
+  ]
+}

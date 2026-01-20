@@ -107,6 +107,12 @@ function createCanvasRenderer(canvas, settings = {}) {
   let imageData = prepareCanvas(canvas, context, simulation);
   updateFrameHash(canvas, simulation);
   let animationId = null;
+  const staticMode = isTestMode();
+
+  function renderStaticFrame() {
+    renderFrame(simulation, imageData.data);
+    context.putImageData(imageData, 0, 0);
+  }
 
   function draw() {
     if (!canvas.isConnected) {
@@ -120,7 +126,7 @@ function createCanvasRenderer(canvas, settings = {}) {
   }
 
   function start() {
-    if (animationId !== null) {
+    if (staticMode || animationId !== null) {
       return;
     }
     animationId = requestAnimationFrame(draw);
@@ -137,15 +143,26 @@ function createCanvasRenderer(canvas, settings = {}) {
     simulation = createFireSimulation({ ...simulation.settings, ...nextSettings });
     imageData = prepareCanvas(canvas, context, simulation);
     updateFrameHash(canvas, simulation);
+    if (staticMode) {
+      renderStaticFrame();
+    }
   }
 
-  start();
+  if (staticMode) {
+    renderStaticFrame();
+  } else {
+    start();
+  }
 
   return {
     start,
     stop,
     updateSettings,
   };
+}
+
+function isTestMode() {
+  return typeof window !== "undefined" && window.__PLAYWRIGHT__ === true;
 }
 
 function prepareCanvas(canvas, context, simulation) {

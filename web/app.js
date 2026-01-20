@@ -9,19 +9,55 @@ const liveRoot = document.getElementById("live-root");
 const liveBadge = document.getElementById("live-badge");
 const liveError = document.getElementById("live-error");
 
+const testMode = typeof window !== "undefined" && window.__PLAYWRIGHT__ === true;
+
 const state = {
   manifestConfig: getManifestConfig(),
   live: false,
   liveSurface: null,
-  narration: null,
+  narration: { phase: "idle", text: "", stepIndex: 0 },
+  narrationNode: null,
   fireRenderer: null,
   fireCanvas: null,
   fireSettings: null,
   stagedSettings: null,
+  defaultSettings: null,
   fireAnimationId: null,
   audioPlayer: null,
   audioEnabled: false,
 };
+
+if (testMode) {
+  installTestHook();
+}
+
+function installTestHook() {
+  window.__doomfireTest = {
+    getStaged() {
+      return state.stagedSettings ? { ...state.stagedSettings } : null;
+    },
+    getApplied() {
+      return state.fireSettings ? { ...state.fireSettings } : null;
+    },
+    getNarrationPhase() {
+      return state.narration?.phase || "";
+    },
+    getAudioState() {
+      const playerState =
+        state.audioPlayer && typeof state.audioPlayer.getState === "function"
+          ? state.audioPlayer.getState()
+          : null;
+      return {
+        enabled: state.audioEnabled === true,
+        contextState: playerState?.contextState || "uninitialized",
+        isPlaying: playerState?.isPlaying === true,
+      };
+    },
+    getCanvasHash() {
+      return hashCanvasPixels(state.fireCanvas);
+    },
+  };
+}
 
 async function loadPreview() {
   const query = buildManifestQuery();
@@ -96,6 +132,9 @@ function resetLiveUi() {
   state.fireCanvas = null;
   state.fireSettings = null;
   state.stagedSettings = null;
+  state.defaultSettings = null;
+  state.narration = { phase: "idle", text: "", stepIndex: 0 };
+  state.narrationNode = null;
   liveBadge.hidden = true;
   liveRoot.innerHTML = "";
 }
@@ -129,6 +168,8 @@ function renderLiveSurface(surface) {
   state.fireRenderer = null;
   state.fireSettings = mergeSettings(state.fireSettings, findFireSettings(surface));
   state.stagedSettings = { ...state.fireSettings };
+  state.defaultSettings = { ...state.fireSettings };
+  state.narration = { phase: "idle", text: "", stepIndex: 0 };
   const element = renderPlan(
     {
       surfaceId: "main",
@@ -137,9 +178,14 @@ function renderLiveSurface(surface) {
     },
     {
       ignite: handleIgnite,
+      reset: handleReset,
     }
   );
   liveRoot.appendChild(element);
+  state.narrationNode = liveRoot.querySelector('[data-testid="narration-text"]');
+  if (state.narrationNode) {
+    state.narration.text = state.narrationNode.textContent || "";
+  }
 }
 
 async function handleIgnite() {
@@ -177,6 +223,14 @@ async function handleIgnite() {
   }
 }
 
+function handleReset() {
+  if (!state.live || !state.defaultSettings) {
+    return;
+  }
+  state.stagedSettings = { ...state.defaultSettings };
+  syncControls();
+}
+
 function renderPlan(plan, handlers) {
   return renderComponent(plan.rootId, plan.components, handlers);
 }
@@ -190,30 +244,62 @@ function renderComponent(componentId, components, handlers) {
   }
 
   const [type, props] = Object.entries(entry.component)[0] || [];
+  let element = null;
 
   switch (type) {
     case "Card":
-      return renderCard(props, components, handlers);
+      element = renderCard(props, components, handlers);
+      break;
     case "Column":
-      return renderColumn(props, components, handlers);
+      element = renderColumn(props, components, handlers);
+      break;
     case "Row":
-      return renderRow(props, components, handlers);
+      element = renderRow(props, components, handlers);
+      break;
     case "Text":
-      return renderText(props);
+      element = renderText(props);
+      break;
     case "Button":
-      return renderButton(props, handlers);
+      element = renderButton(props, handlers);
+      break;
     case "Slider":
-      return renderSlider(props);
+      element = renderSlider(props);
+      break;
     case "DoomFireCanvas":
-      return renderDoomFireCanvas(props);
+      element = renderDoomFireCanvas(props);
+      break;
     case "Image":
-      return renderImagePlaceholder(props);
+      element = renderImagePlaceholder(props);
+      break;
     default: {
       const fallback = document.createElement("div");
       fallback.textContent = `Unsupported component: ${type || "unknown"}`;
-      return fallback;
+      element = fallback;
+      break;
     }
   }
+
+  if (element && componentId) {
+    element.dataset.componentId = componentId;
+    if (!element.dataset.testid) {
+      const testId = testIdForComponent(type, componentId, props);
+      if (testId) {
+        element.dataset.testid = testId;
+      }
+    }
+  }
+
+  return element;
+}
+
+function testIdForComponent(type, componentId) {
+  if (type === "Text" && componentId === "narration") {
+    return "narration-text";
+  }
+  if (type === "DoomFireCanvas" && componentId === "canvas") {
+    return "doomfire-canvas";
+  }
+  return null;
 }
 
 function renderCard(props, components, handlers) {
@@ -271,11 +357,19 @@ function renderButton(props, handlers) {
   button.textContent = props?.label?.literalString || "Button";
 
   const actionType = props?.action?.hostEvent?.type;
+  const presetId = props?.action?.hostEvent?.payload?.presetId;
+  const testId = testIdForButton(actionType, presetId);
+  if (testId) {
+    button.dataset.testid = testId;
+  }
   if (actionType === "openLive" && handlers?.openLive) {
     button.addEventListener("click", handlers.openLive);
   }
   if (actionType === "ignite" && handlers?.ignite) {
     button.addEventListener("click", handlers.ignite);
+  }
+  if (actionType === "reset" && handlers?.reset) {
+    button.addEventListener("click", handlers.reset);
   }
   if (actionType === "toggleAudio") {
     if (state.audioEnabled) {
@@ -286,7 +380,6 @@ function renderButton(props, handlers) {
     });
   }
   if (actionType === "setPreset") {
-    const presetId = props?.action?.hostEvent?.payload?.presetId;
     if (typeof presetId === "string") {
       button.dataset.presetId = presetId;
       if (state.stagedSettings?.presetId === presetId) {
@@ -299,6 +392,23 @@ function renderButton(props, handlers) {
   }
 
   return button;
+}
+
+function testIdForButton(actionType, presetId) {
+  switch (actionType) {
+    case "openLive":
+      return "open-live";
+    case "ignite":
+      return "ignite-button";
+    case "reset":
+      return "reset-button";
+    case "toggleAudio":
+      return "audio-toggle";
+    case "setPreset":
+      return presetId ? `preset-${presetId}` : null;
+    default:
+      return null;
+  }
 }
 
 function renderSlider(props) {
@@ -328,6 +438,8 @@ function renderSlider(props) {
   if (controlKey) {
     input.dataset.control = controlKey;
     value.dataset.controlValue = controlKey;
+    input.dataset.testid = `control-${controlKey}`;
+    value.dataset.testid = `control-${controlKey}-value`;
     input.addEventListener("input", (event) => {
       const nextValue = Number.parseFloat(event.target.value);
       updateStagedSettings({ [controlKey]: nextValue });
@@ -344,6 +456,7 @@ function renderSlider(props) {
 function renderDoomFireCanvas(props) {
   const canvas = document.createElement("canvas");
   canvas.className = "doomfire-canvas";
+  canvas.dataset.testid = "doomfire-canvas";
   const settings = mergeSettings(state.fireSettings, props?.appliedSettings);
   state.fireSettings = settings;
   state.stagedSettings = state.stagedSettings || { ...settings };
@@ -362,22 +475,23 @@ function renderImagePlaceholder(props) {
 }
 
 function applyAgentUpdates(updates) {
-  const narrationChunks = [];
-
   updates.forEach((update) => {
     if (update && update.applied) {
       applySettingsUpdate(update.applied);
     }
-    if (update?.narration?.text) {
-      narrationChunks.push(update.narration.text);
+    if (update && update.narration) {
+      applyNarrationUpdate(update.narration);
     }
   });
+}
 
-  if (narrationChunks.length > 0) {
-    const narrationNode = document.createElement("p");
-    narrationNode.className = "text--body";
-    narrationNode.textContent = narrationChunks.join(" ");
-    liveRoot.appendChild(narrationNode);
+function applyNarrationUpdate(narration) {
+  state.narration = { ...state.narration, ...narration };
+  if (!state.narrationNode) {
+    state.narrationNode = liveRoot.querySelector('[data-testid="narration-text"]');
+  }
+  if (state.narrationNode) {
+    state.narrationNode.textContent = state.narration.text || "";
   }
 }
 
@@ -491,6 +605,28 @@ function getControlInitialValue(controlKey, fallbackValue) {
 
 function formatSliderValue(value) {
   return value.toFixed(2);
+}
+
+function hashCanvasPixels(canvas) {
+  if (!canvas) {
+    return "";
+  }
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return "";
+  }
+  const width = canvas.width || 0;
+  const height = canvas.height || 0;
+  if (width === 0 || height === 0) {
+    return "";
+  }
+  const data = context.getImageData(0, 0, width, height).data;
+  let hash = 2166136261;
+  for (let i = 0; i < data.length; i += 1) {
+    hash ^= data[i];
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
 function mergeSettings(current, next) {

@@ -14,7 +14,9 @@
             "id": "col",
             "component": {
               "Column": {
-                "children": {"explicitList": ["title", "canvas", "controls", "ignite"]}
+                "children": {
+                  "explicitList": ["title", "canvas", "controls", "narration", "ignite", "reset"]
+                }
               }
             }
           },
@@ -39,6 +41,15 @@
                   "seed": 1337
                 },
                 "phase": "idle"
+              }
+            }
+          },
+          {
+            "id": "narration",
+            "component": {
+              "Text": {
+                "text": {"literalString": "Ready when you are."},
+                "usageHint": "body"
               }
             }
           },
@@ -223,6 +234,15 @@
               "Button": {
                 "label": {"literalString": "Ignite"},
                 "action": {"hostEvent": {"type": "ignite"}}
+              }
+            }
+          },
+          {
+            "id": "reset",
+            "component": {
+              "Button": {
+                "label": {"literalString": "Reset"},
+                "action": {"hostEvent": {"type": "reset"}}
               }
             }
           }
